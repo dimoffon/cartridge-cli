@@ -8,16 +8,6 @@ variables:
   BUNDLE_VERSION: 1.10.3-68-g618f48d
   PACKAGE_TARGETS: |
     OS=el DIST=6
-    OS=el DIST=7
-    OS=el DIST=8
-    OS=fedora DIST=29
-    OS=fedora DIST=30
-    OS=ubuntu DIST=trusty
-    OS=ubuntu DIST=xenial
-    OS=ubuntu DIST=bionic
-    OS=debian DIST=jessie
-    OS=debian DIST=stretch
-    OS=debian DIST=buster
   PACKAGECLOUD_REPOS: |
     1_10
     2x
@@ -28,68 +18,6 @@ variables:
   tags:
     - docker
     - mcs
-
-.test_template: &test_template
-  <<: *job
-  stage: test
-  script:
-    - make lint test
-
-test_enterprise-1.10:
-  <<: *test_template
-  cache:
-    key: $BUNDLE_VERSION
-    paths:
-      - tmp/sdk-1.10
-  before_script:
-    - yum -y install $INSTALL_PACKAGES
-    - make tmp/sdk-1.10
-    - source tmp/sdk-1.10/env.sh
-    - tarantool -V
-    - make ci_prepare
-
-.test_opensource: &test_opensource
-  <<: *test_template
-  before_script:
-    - curl -s https://packagecloud.io/install/repositories/tarantool/$TARANTOOL_VERSION/script.rpm.sh | bash
-    - yum -y install tarantool tarantool-devel $INSTALL_PACKAGES
-    - tarantool -V
-    - make ci_prepare
-
-test_opensource-1.10:
-  <<: *test_opensource
-  variables:
-    TARANTOOL_VERSION: '1_10'
-
-test_opensource-2.2:
-  <<: *test_opensource
-  variables:
-    TARANTOOL_VERSION: '2_2'
-
-.e2e-opensource-1.10:
-  stage: test
-  tags:
-    - shell
-    - vagrant
-  before_script:
-    - vagrant up
-  script:
-    - vagrant ssh centos < test/e2e/start-rpm.sh
-    - vagrant ssh centos < test/e2e/test-cluster.sh
-    - vagrant reload centos
-    - sleep 1
-    - vagrant ssh centos < test/e2e/test-cluster.sh
-    - vagrant ssh centos < test/e2e/cleanup.sh
-
-    - vagrant ssh ubuntu < test/e2e/start-deb.sh
-    - vagrant ssh ubuntu < test/e2e/test-cluster.sh
-    - vagrant reload ubuntu
-    - sleep 1
-    - vagrant ssh ubuntu < test/e2e/test-cluster.sh
-    - vagrant ssh ubuntu < test/e2e/cleanup.sh
-  after_script:
-    - vagrant halt
-    - vagrant destroy
 
 pack:
   <<: *job
@@ -107,7 +35,6 @@ pack:
     DOCKER_TLS_CERTDIR: ''
   before_script:
     - git describe --long
-    - git clone https://github.com/packpack/packpack.git packpack
   script:
     - (set -ex;
       echo "$PACKAGE_TARGETS" | while read -r vars; do (
