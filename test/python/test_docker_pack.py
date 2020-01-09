@@ -153,32 +153,12 @@ def test_docker_pack(project, docker_image, tmpdir, docker_client):
         files_list=recursive_listdir(os.path.join(tmpdir, 'usr/share/tarantool/', project['name'])),
         exp_files_list=project['distribution_files_list'],
         exp_rocks_content=project['rocks_content'],
-        skip_tarantool_binaries=True
     )
 
     assert_filemodes(project, tmpdir)
     container.remove()
 
-    if tarantool_enterprise_is_used():
-        # check tarantool and tarantoolctl binaries
-        command = '[ -d "/usr/share/tarantool/tarantool-enterprise/" ] && echo true || echo false'
-        output = run_command_on_image(docker_client, image_name, command)
-        assert output == 'true'
-
-        command = 'cd /usr/share/tarantool/tarantool-enterprise/ && find .'
-        output = run_command_on_image(docker_client, image_name, command)
-
-        files_list = output.split('\n')
-        files_list.remove('.')
-
-        dir_contents = [
-            os.path.normpath(filename)
-            for filename in files_list
-        ]
-
-        assert 'tarantool' in dir_contents
-        assert 'tarantoolctl' in dir_contents
-    else:
+    if not tarantool_enterprise_is_used():
         # check if tarantool was installed
         command = 'yum list installed 2>/dev/null | grep tarantool'
         output = run_command_on_image(docker_client, image_name, command)
