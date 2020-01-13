@@ -1078,7 +1078,7 @@ local function generate_version_file(distribution_dir)
             warn("can't open VERSION file from Tarantool SDK. SDK information can't be " ..
                 "shipped to the resulting package. ")
         else
-            version_file:write(fio.open(tnt_version):read())
+            version_file:write(read_file(tnt_version))
         end
     else
         -- write TARANTOOL version
@@ -2226,7 +2226,7 @@ local function construct_dockerfile(filepath, from)
 
     if pack_state.tarantool_is_enterprise then
         local tnt_version_filepath = fio.pathjoin(get_tarantool_dir(), 'VERSION')
-        local tnt_version = fio.open(tnt_version_filepath):read()
+        local tnt_version = read_file(tnt_version_filepath)
 
         local sdk_version = string.match(tnt_version, 'TARANTOOL_SDK=(%S+)\n')
         if sdk_version == nil then
@@ -2267,7 +2267,7 @@ local function pack_docker(opts)
 
         info('Detected base Dockerfile %s', pack_state.from)
 
-        local dockerfile_content = fio.open(pack_state.from):read()
+        local dockerfile_content = read_file(pack_state.from)
         validate_from_dockerfile(dockerfile_content)
 
         info('Base Dockerfile is OK')
