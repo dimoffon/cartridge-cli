@@ -1070,7 +1070,7 @@ local function generate_version_file(distribution_dir)
              "shipped to the resulting package. ")
     end
 
-    if tarantool_is_enterprise() then
+    if pack_state.tarantool_is_enterprise then
         -- copy TARANTOOL and TARANTOOL_SDK versions from SDK version file
         local tarantool_dir = get_tarantool_dir()
         local tnt_version = fio.pathjoin(tarantool_dir, 'VERSION')
@@ -1346,7 +1346,7 @@ end
 
 local function copy_taranool_binaries(dir)
     info('Copy Tarantool Enterprise binaries')
-    assert(tarantool_is_enterprise())
+    assert(pack_state.tarantool_is_enterprise)
 
     local tarantool_dir = get_tarantool_dir()
     assert(fio.copyfile(fio.pathjoin(tarantool_dir, 'tarantool'),
@@ -1372,7 +1372,7 @@ local function form_systemd_dir(base_dir, opts)
         mkdir = opts.mkdir,
     }
 
-    if tarantool_is_enterprise() then
+    if pack_state.tarantool_is_enterprise then
         expand_params.bindir = expand_params.dir
     else
         expand_params.bindir = '/usr/bin'
@@ -1438,7 +1438,7 @@ local function pack_tgz()
     build_application(distribution_dir)
     generate_version_file(distribution_dir)
 
-    if tarantool_is_enterprise() then
+    if pack_state.tarantool_is_enterprise then
         copy_taranool_binaries(distribution_dir)
     end
 
@@ -1463,7 +1463,7 @@ local function pack_rock()
     build_application(distribution_dir)
     generate_version_file(distribution_dir)
 
-    if tarantool_is_enterprise() then
+    if pack_state.tarantool_is_enterprise then
         copy_taranool_binaries(distribution_dir)
     end
 
@@ -1931,7 +1931,7 @@ local function pack_cpio(opts)
     form_systemd_dir(tmpdir, opts)
     write_tmpfiles_conf(tmpdir)
 
-    if tarantool_is_enterprise() then
+    if pack_state.tarantool_is_enterprise then
         copy_taranool_binaries(distribution_dir)
     end
 
@@ -2010,7 +2010,7 @@ local function pack_rpm(opts)
         {'SIZE', 'INT32', payloadsize}
     }
 
-    if not tarantool_is_enterprise() then
+    if not pack_state.tarantool_is_enterprise then
         --- Append RPM dependency flags for Tarantool
         --- See Dependency Tags section of
         --- - https://docs.fedoraproject.org/ro/Fedora_Draft_Documentation/0.1/html/RPM_Guide/ch-package-structure.html
@@ -2083,7 +2083,7 @@ local function form_deb_control_dir(dest_dir, name, release, version)
         deps = ''
     }
 
-    if not tarantool_is_enterprise() then
+    if not pack_state.tarantool_is_enterprise then
         -- Add tarantool dependency
         local major, minor, patch = unpack(normalize_version(_TARANTOOL))
         local min_version = ('%s.%s.%s'):format(major, minor, patch)
@@ -2172,7 +2172,7 @@ local function pack_deb(opts)
     form_systemd_dir(data_dir, opts)
     write_tmpfiles_conf(data_dir)
 
-    if tarantool_is_enterprise() then
+    if pack_state.tarantool_is_enterprise then
         copy_taranool_binaries(distribution_dir)
     end
 
@@ -2224,7 +2224,7 @@ local function construct_dockerfile(filepath, from)
         expand_params.prebuild_script_name = DEP_PREBUILD_SCRIPT_NAME
     end
 
-    if tarantool_is_enterprise() then
+    if pack_state.tarantool_is_enterprise then
         local tnt_version_filepath = fio.pathjoin(get_tarantool_dir(), 'VERSION')
         local tnt_version = fio.open(tnt_version_filepath):read()
 
@@ -2299,7 +2299,7 @@ local function pack_docker(opts)
     info('Building docker image: %s', image_fullname)
 
     local download_token_arg = ''
-    if tarantool_is_enterprise() then
+    if pack_state.tarantool_is_enterprise then
         download_token_arg = string.format('--build-arg DOWNLOAD_TOKEN=%s', pack_state.download_token)
     end
 
@@ -2362,6 +2362,7 @@ local function app_pack(args)
     pack_state.download_token = args.download_token
     pack_state.docker_build_args = args.docker_build_args
     pack_state.deprecated_flow = check_if_deprecated_build_flow_is_ised()
+    pack_state.tarantool_is_enterprise = tarantool_is_enterprise()
 
     local instantiated_unit_template
     if args.instantiated_unit_template then
@@ -2446,7 +2447,7 @@ local function app_pack_parse(arg)
                 table.concat(available_package_types, ', '))
     end
 
-    if tarantool_is_enterprise() and args.type == 'docker' then
+    if pack_state.tarantool_is_enterprise and args.type == 'docker' then
         if not args.download_token then
             die(
                 'Tarantool download token is required to pack enterprise Tarantool app in docker. ' ..
